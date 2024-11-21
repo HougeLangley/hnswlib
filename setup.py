@@ -91,6 +91,10 @@ class BuildExt(build_ext):
     # 如果操作系统是 Linux RISCV，需要移除 -march=native 选项
     if platform.system() == "Linux" and platform.machine().startswith("riscv"):
         c_opts["unix"].remove("-march=native") # 移除 -march=native 选项
+    else: # 如果不是 Linux RISCV，则添加特定的编译器标志
+        if has_flag(build_ext.compiler, "-fopenmp"):
+            c_opts["unix"].append("-fopenmp")
+            link_opts["unix"].append("-fopenmp")
 
     def build_extensions(self):
         ct = self.compiler.compiler_type
@@ -108,15 +112,14 @@ class BuildExt(build_ext):
 setup(
     name="hnswlib",
     version=__version__,
-    author="B. Nannen",
-    author_email="b.nannen@tu-berlin.de",
+    author="B. Nannen, Y. Matveev",
+    author_email="b.nannen@tue.nl, y.matveev@yandex.ru",
     url="https://github.com/nmslib/hnswlib",
-    description="NMSLIB HNSW implementation for fast approximate nearest neighbors search",
-    long_description=open("README.md").read(),
+    description="Fast approximate nearest neighbor search library based on Hierarchical Navigable Small World graphs.",
+    long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
     ext_modules=ext_modules,
     install_requires=["numpy>=1.14"],
-    setup_requires=["pybind11>=2.3"],
     cmdclass={"build_ext": BuildExt},
     zip_safe=False,
 )
