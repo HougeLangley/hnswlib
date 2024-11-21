@@ -88,6 +88,45 @@ class BuildExt(build_ext):
         "msvc": [],
     }
 
+    # 如果操作系统是 Linux RISCV，需要移除 -march=native 选项
+    if platform.system() == "Linux" and platform.machine().startswith("riscv"):
+        c_opts["unix"].remove("-march=native")
+
+    def build_extensions(self):
+        ct = self.compiler.compiler_type
+        opts = self.c_opts.get(ct, [])
+        link_opts = self.link_opts.get(ct, [])
+
+        if ct == "unix":
+            opts.append('-DVERSION_INFO="%s"' % self.distribution.get_version())
+            opts.append(cpp_flag(self.compiler))
+
+        elif ct == "msvc":
+            opts.append('/DVERSION_INFO=\\"%s\\"' % self.distribution.get_version())
+
+        for ext in self.extensions:
+            ext.extra_compile_args = opts
+            ext.extra_link_args = link_opts
+
+        build_ext.build_extensions(self)
+
+
+setup(
+    name="hnswlib",
+    version=__version__,
+    author="B. Nannen, M. Andrecut",
+    author_email="b.nannen@fu-berlin.de, m.andrecut@gmail.com",
+    url="https://github.com/nmslib/hnswlib",
+    description="Fast approximate nearest neighbors with HNSW",
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
+    ext_modules=ext_modules,
+    install_requires=["numpy>=1.15"],
+    setup_requires=["pybind11>=2.4", "setuptools>=0.7.0"],
+    cmdclass={"build_ext": BuildExt},
+    zip_safe=False,
+)
+
     if sys.platform == "darwin":
         if platform.machine() == "arm64":
             if "-march=native" in c_opts["unix"]:
